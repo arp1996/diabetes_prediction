@@ -1,11 +1,30 @@
-from django.shortcuts import render
-from django.http import HttpResponse
-from django.shortcuts import render, redirect
-from django.contrib.auth.forms import AuthenticationForm
-from .forms import RegisterForm
-from django.contrib.auth import login, logout, authenticate
-from django.contrib.auth.decorators import login_required
+from pathlib import Path
+
+import joblib
+import pandas as pd
 from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
+from django.shortcuts import redirect, render
+from sklearn.svm import SVC
+
+from .forms import RegisterForm
+
+
+def _load_model():
+    model_path = Path(__file__).resolve().parent / "model.joblib"
+    if model_path.exists():
+        return joblib.load(model_path)
+
+    df = pd.read_csv(Path(__file__).resolve().parent / "heart.csv")
+    X = df[["RestingBP", "Cholesterol", "FastingBS", "MaxHR", "Oldpeak"]]
+    y = df["HeartDisease"]
+
+    model = SVC()
+    model.fit(X, y)
+    joblib.dump(model, model_path)
+    return model
 
 
 def register(request):
@@ -49,33 +68,23 @@ def predict(request):
     		
             return render(request,'predict.html')
 def result(request):
+    if request.method == 'POST':
+        values = [
+            float(request.POST.get('RestingBP', 0)),
+            float(request.POST.get('Cholesterol', 0)),
+            float(request.POST.get('FastingBS', 0)),
+            float(request.POST.get('MaxHR', 0)),
+            float(request.POST.get('Oldpeak', 0)),
+        ]
 
-        if request.method=='POST':
-                glucose=request.POST['RestingBP']
-                blood_pressure=request.POST['Cholesterol']
-                skin_thickness=request.POST['FastingBS']
-                insulin=request.POST['MaxHR']
-                bmi=request.POST['Oldpeak']
+        model = _load_model()
+        feature_frame = pd.DataFrame([values], columns=["RestingBP", "Cholesterol", "FastingBS", "MaxHR", "Oldpeak"])
+        prediction = int(model.predict(feature_frame)[0])
+        value = 'Positive' if prediction == 1 else 'Negative'
 
-        lis=[glucose,blood_pressure,skin_thickness,insulin,bmi] 
-        print(lis)
+        return render(request, 'result.html', {
+            'ans': value,
+            'title': 'Predict',
+        })
 
-        #training model
-        from joblib import load
-        model=load(r'C:\Users\ADMIN\Desktop\djangopro2\model.joblib')
-
-        #make prediction
-        result=model.predict([lis])
-        print(result)
-
-        if result[0]==0:
-                print("No")
-                value='Negative' 
-        else:
-                print("Yes")
-                value='Positive'
-
-        return render (request,'result.html', {
-                'ans':value,
-                'title':'Predict',
-        }  )
+    return redirect('predict')
