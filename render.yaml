@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: diabetes-prediction
+    runtime: python
+    repo: https://github.com/Therazerhub/diabetes
+    plan: free
+    branch: main
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    startCommand: gunicorn heartdisease.wsgi:application --workers 2 --timeout 120
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: diabetes-db
+          property: connectionString
+
+databases:
+  - name: diabetes-db
+    plan: free
+    databaseName: diabetes

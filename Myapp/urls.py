@@ -8,4 +8,5 @@ urlpatterns=[
         path('login_view',views.login_view,name='login_view'),
         path('predict',views.predict,name='predict'),
         path('result',views.result,name='result'),
+        path('logout1',views.logout1,name='logout1'),
 	]

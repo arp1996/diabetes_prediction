@@ -1,10 +1,16 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
 
-df= pd.read_csv(r'C:\Users\ADMIN\Desktop\djangopro2\heartdisease\Myapp\heart.csv')
+DATA_DIR = Path(__file__).resolve().parent
+
+df = pd.read_csv(DATA_DIR / "heart.csv")
 
 print(df.head())
 
@@ -67,5 +73,5 @@ plt.title('Confusion Matrix')
 plt.show()
 
 from joblib import dump
-dump (svcclassifier,"model.joblib")
+dump(svcclassifier, DATA_DIR / "model.joblib")
 print("Model saved as model.joblib")
